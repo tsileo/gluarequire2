@@ -18,6 +18,22 @@ func TestRequireFromGitHub(t *testing.T) {
 	`); err != nil {
 		panic(err)
 	}
+
+	// Do it a second time, this time, the code should be already cached
+	if err := L.DoString(`
+	local testmod = require2('github.com/tsileo/gluarequire2/_tests/testmod')
+	assert(testmod.return1() == 1)
+	`); err != nil {
+		panic(err)
+	}
+
+	// Test nested import (testmod2 require testmod using require2)
+	if err := L.DoString(`
+	local testmod = require2('github.com/tsileo/gluarequire2/_tests/testmod2')
+	assert(testmod.return1() == 1)
+	`); err != nil {
+		panic(err)
+	}
 }
 
 func TestRequireNoop(t *testing.T) {
@@ -26,14 +42,6 @@ func TestRequireNoop(t *testing.T) {
 
 	NewRequire2Module(nil).SetGlobal(L)
 
-	if err := L.DoString(`
-	local testmod = require2('_tests/testmod')
-	assert(testmod.return1() == 1)
-	`); err != nil {
-		panic(err)
-	}
-
-	// Do it a second time, this time, the script should be cached
 	if err := L.DoString(`
 	local testmod = require2('_tests/testmod')
 	assert(testmod.return1() == 1)
