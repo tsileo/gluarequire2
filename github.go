@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	namePrefix    = "github.com/"
+	namePrefix = "github.com/"
+	// TODO(tsileo): support versioning (@hash, master by default)
 	gitHubFileURL = "https://raw.githubusercontent.com/%s/%s/master/%s"
 	defaultPath   = "/tmp/gluarequire2"
 )
@@ -52,36 +53,35 @@ func (rfgh *RequireFromGitHub) Setup(L *lua.LState, name string) (string, error)
 	if !(len(data) >= 4) {
 		return "", fmt.Errorf("bad format, should be github.com/user/repo/path/to/module")
 	}
-	hpath := fmt.Sprintf("%s", sha1.Sum([]byte(name)))
+	hpath := fmt.Sprintf("%x", sha1.Sum([]byte(name)))
 	os.Mkdir(filepath.Join(rfgh.path, hpath), 0700)
-	modpath := filepath.Join(hpath, fmt.Sprintf("%s.lua", data[len(data)-1]))
+	newName := filepath.Join(hpath, data[len(data)-1])
+	modpath := newName + ".lua"
 	modloc := filepath.Join(rfgh.path, modpath)
 
 	if _, err := os.Stat(modloc); err == nil {
-		return modpath, nil
+		return newName, nil
 	}
 
 	username := data[1]
 	repo := data[2]
 
-	url := fmt.Sprintf(gitHubFileURL, username, repo, modpath)
+	url := fmt.Sprintf(gitHubFileURL, username, repo, strings.Join(data[3:], "/")) + ".lua"
 
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch module: %s", err)
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response: %s", err)
 	}
 
-	// TODO(tsileo): scan for `require2('')` and download them to recursively
-	// TODO(tsileo): support versioning (@hash, master by default)
-
 	if err := ioutil.WriteFile(modloc, body, 0644); err != nil {
 		return "", fmt.Errorf("failed to write downloaded module: %s", err)
 	}
 
-	return modpath, nil
+	return newName, nil
 }
