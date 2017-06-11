@@ -29,8 +29,8 @@ func TestRequireFromGitHub(t *testing.T) {
 
 	// Test nested import (testmod2 require testmod using require2)
 	if err := L.DoString(`
-	local testmod = require2('github.com/tsileo/gluarequire2/_tests/testmod2')
-	assert(testmod.return1() == 1)
+	local testmod2 = require2('github.com/tsileo/gluarequire2/_tests/testmod2')
+	assert(testmod2.return2() == 2)
 	`); err != nil {
 		panic(err)
 	}
